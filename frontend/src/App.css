@@ -339,7 +339,9 @@ body {
   background: #ffffff;
   border-right: 1px solid var(--border-color);
   z-index: 1200;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   transition: transform 0.25s ease;
 }
 
@@ -562,12 +564,7 @@ body {
 /* ---------- STOP LIST ---------- */
 
 .stop-list {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
   padding: 10px;
-  -webkit-overflow-scrolling: touch;
 }
 
 .stop-card {
@@ -784,10 +781,8 @@ body {
   }
 
   .stop-panel {
-    width: min(var(--panel-width), var(--panel-width-mobile));
-    min-width: min(var(--panel-width), var(--panel-width-mobile));
-    max-width: min(var(--panel-width), var(--panel-width-mobile));
-    box-shadow: 6px 0 20px rgba(0, 0, 0, 0.15);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .stop-panel-header {
