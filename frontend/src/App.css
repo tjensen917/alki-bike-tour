@@ -291,7 +291,7 @@ body {
 }
 
 .panel-toggle-button {
-  position: absolute;
+  position: fixed;
   z-index: 1400;
   padding: 10px 14px;
   min-height: 40px;
@@ -306,15 +306,12 @@ body {
   transition: left 0.25s ease, top 0.25s ease, bottom 0.25s ease;
 }
 
-.panel-toggle-open {
-  top: 140px;
-  left: calc(min(var(--panel-width), 85vw) + 24px);
+.panel-toggle-open,
+.panel-toggle-closed {
+  top: 16px;
+  left: 16px;
 }
 
-.panel-toggle-closed {
-  top: 140px;
-  left: 24px;
-}
 
 .panel-toggle-button:hover {
   opacity: 0.92;
