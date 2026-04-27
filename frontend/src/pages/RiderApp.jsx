@@ -50,8 +50,15 @@ function FitBounds({ stops, selectedStop }) {
     return null;
 }
 
-function MapController({ selectedStop, userLocation, followUser, isNavigating }) {
+function MapController({
+    selectedStop,
+    selectedStopIndex,
+    userLocation,
+    followUser,
+    isNavigating,
+}) {
     const map = useMap();
+    const lastSelectedStopIndexRef = useRef(null);
 
     useEffect(() => {
         if (isNavigating && userLocation) {
@@ -168,8 +175,8 @@ function speakText(text) {
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.95;
-    utterance.pitch = 1;
+    utterance.rate = 1.73;
+    utterance.pitch = 1.34;
     utterance.volume = 1;
 
     window.speechSynthesis.speak(utterance);
@@ -247,7 +254,7 @@ export default function RiderApp() {
     const [expandedStoryStopName, setExpandedStoryStopName] = useState("");
     const [expandedImagesStopName, setExpandedImagesStopName] = useState("");
     const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
-    const [isPanelOpen, setIsPanelOpen] = useState(window.innerWidth > MOBILE_BREAKPOINT);
+    const [isPanelOpen, setIsPanelOpen] = useState(true);
     const [returnReminder, setReturnReminder] = useState("");
 
     const [showRoute, setShowRoute] = useState(false);
@@ -361,7 +368,10 @@ export default function RiderApp() {
         const handleResize = () => {
             const mobile = window.innerWidth <= MOBILE_BREAKPOINT;
             setIsMobile(mobile);
-            setIsPanelOpen(!mobile);
+
+            if (!mobile) {
+                setIsPanelOpen(true);
+            }
         };
 
         window.addEventListener("resize", handleResize);
@@ -502,8 +512,7 @@ export default function RiderApp() {
         setNavigatingStopIndex(index);
         setShowRoute(true);
         setIsNavigating(true);
-
-        // 🔥 keeps panel open (better UX)
+        setFollowUser(false);
     };
 
     const stopNavigation = () => {
@@ -649,23 +658,6 @@ export default function RiderApp() {
 
     return (
         <div className="tour-layout">
-            {isNavigating && selectedStop && (
-                <div className="navigation-card">
-                    <div>
-                        <div className="navigation-label">Navigating to</div>
-                        <div className="navigation-title">{selectedStop.name}</div>
-                    </div>
-
-                    <button
-                        type="button"
-                        className="navigation-stop-button"
-                        onClick={stopNavigation}
-                    >
-                        End
-                    </button>
-                </div>
-            )}
-
             <button
                 type="button"
                 className={`panel-toggle-button ${isPanelOpen ? "panel-toggle-open" : "panel-toggle-closed"
@@ -805,10 +797,27 @@ export default function RiderApp() {
                                     </div>
                                 )}
                             </>
+                        ) : isNavigating && navigatingStopIndex === selectedStopIndex ? (
+                            <>
+                                <div className="locked-stop-message">
+                                    Navigating to this stop. The story will unlock when you get close enough.
+                                </div>
+
+                                <div className="selected-stop-actions">
+                                    <button
+                                        type="button"
+                                        className="clear-route-button"
+                                        onClick={stopNavigation}
+                                    >
+                                        Stop Navigation
+                                    </button>
+                                </div>
+                            </>
                         ) : (
                             <>
                                 <div className="locked-stop-message">
-                                    Get within {effectiveUnlockRadiusFeetDisplay} feet of this stop to unlock.
+                                    Get within {effectiveUnlockRadiusFeetDisplay} feet of this stop to unlock the
+                                    story, audio, and images.
                                 </div>
 
                                 <div className="selected-stop-actions">
@@ -817,28 +826,11 @@ export default function RiderApp() {
                                         className="navigate-button"
                                         onClick={() => startNavigationToStop(selectedStopIndex)}
                                     >
-                                        Start Route
+                                        Go Now
                                     </button>
                                 </div>
                             </>
-                        )} : (
-                        <>
-                            <div className="locked-stop-message">
-                                Get within {effectiveUnlockRadiusFeetDisplay} feet of this stop to unlock the
-                                story, audio, and images.
-                            </div>
-
-                            <div className="selected-stop-actions">
-                                <button
-                                    type="button"
-                                    className="navigate-button"
-                                    onClick={() => startNavigationToStop(selectedStopIndex)}
-                                >
-                                    Go Now
-                                </button>
-                            </div>
-                        </>
-
+                        )}
                     </div>
                 )}
 
@@ -896,6 +888,7 @@ export default function RiderApp() {
                     <FitBounds stops={stops} selectedStop={selectedStop} />
                     <MapController
                         selectedStop={selectedStop}
+                        selectedStopIndex={selectedStopIndex}
                         userLocation={userLocation}
                         followUser={followUser}
                         isNavigating={isNavigating}
