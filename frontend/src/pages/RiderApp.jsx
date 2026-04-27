@@ -831,23 +831,7 @@ export default function RiderApp() {
                                     </button>
                                 </div>
                             </>
-                        )} : (
-                        <>
-                            <div className="locked-stop-message">
-                                Get within {effectiveUnlockRadiusFeetDisplay} feet of this stop to unlock the
-                                story, audio, and images.
-                            </div>
-
-                            <div className="selected-stop-actions">
-                                <button
-                                    type="button"
-                                    className="navigate-button"
-                                    onClick={() => startNavigationToStop(selectedStopIndex)}
-                                >
-                                    Go Now
-                                </button>
-                            </div>
-                        </>
+                        )}
 
                     </div>
                 )}
