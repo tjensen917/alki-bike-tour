@@ -66,15 +66,20 @@ function MapController({
             return;
         }
 
-        if (selectedStop) {
-            map.setView(selectedStop.position, 15, { animate: true });
+        if (followUser && userLocation) {
+            map.panTo(userLocation, { animate: true });
             return;
         }
 
-        if (followUser && userLocation) {
-            map.panTo(userLocation, { animate: true });
+        if (selectedStop && selectedStopIndex !== lastSelectedStopIndexRef.current) {
+            map.setView(selectedStop.position, 15, { animate: true });
+            lastSelectedStopIndexRef.current = selectedStopIndex;
         }
-    }, [map, selectedStop, userLocation, followUser, isNavigating]);
+
+        if (selectedStopIndex === null) {
+            lastSelectedStopIndexRef.current = null;
+        }
+    }, [map, selectedStop, selectedStopIndex, userLocation, followUser, isNavigating]);
 
     return null;
 }
@@ -200,14 +205,8 @@ function triggerArrivalFeedback() {
         oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
 
         gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(
-            0.08,
-            audioContext.currentTime + 0.02
-        );
-        gainNode.gain.exponentialRampToValueAtTime(
-            0.0001,
-            audioContext.currentTime + 0.35
-        );
+        gainNode.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.35);
 
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
@@ -215,9 +214,7 @@ function triggerArrivalFeedback() {
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.35);
 
-        oscillator.onended = () => {
-            audioContext.close();
-        };
+        oscillator.onended = () => audioContext.close();
 
         return true;
     } catch {
@@ -254,7 +251,7 @@ export default function RiderApp() {
     const [expandedStoryStopName, setExpandedStoryStopName] = useState("");
     const [expandedImagesStopName, setExpandedImagesStopName] = useState("");
     const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
-    const [isPanelOpen, setIsPanelOpen] = useState(true);
+    const [isPanelOpen, setIsPanelOpen] = useState(window.innerWidth > MOBILE_BREAKPOINT);
     const [returnReminder, setReturnReminder] = useState("");
 
     const [showRoute, setShowRoute] = useState(false);
@@ -269,20 +266,7 @@ export default function RiderApp() {
     const markerRefs = useRef([]);
     const watchIdRef = useRef(null);
 
-    const playIntroAudio = async () => {
-        if (!introAudioRef.current || introPlayed) return;
-
-        try {
-            introAudioRef.current.currentTime = 0;
-            await introAudioRef.current.play();
-            setIntroPlayed(true);
-        } catch (err) {
-            console.log("Intro audio blocked or failed:", err);
-        }
-    };
-
-    const selectedStop =
-        selectedStopIndex !== null ? stops[selectedStopIndex] : null;
+    const selectedStop = selectedStopIndex !== null ? stops[selectedStopIndex] : null;
 
     const nearestStop = useMemo(
         () => findNearestStop(userLocation, stops),
@@ -351,6 +335,18 @@ export default function RiderApp() {
         ? expandedImagesStopName === selectedStop.name
         : false;
 
+    const playIntroAudio = async () => {
+        if (!introAudioRef.current || introPlayed) return;
+
+        try {
+            introAudioRef.current.currentTime = 0;
+            await introAudioRef.current.play();
+            setIntroPlayed(true);
+        } catch (err) {
+            console.log("Intro audio blocked or failed:", err);
+        }
+    };
+
     useEffect(() => {
         async function loadPublicData() {
             const [stopsRes, settingsRes] = await Promise.all([
@@ -368,10 +364,7 @@ export default function RiderApp() {
         const handleResize = () => {
             const mobile = window.innerWidth <= MOBILE_BREAKPOINT;
             setIsMobile(mobile);
-
-            if (!mobile) {
-                setIsPanelOpen(true);
-            }
+            setIsPanelOpen(!mobile);
         };
 
         window.addEventListener("resize", handleResize);
@@ -438,6 +431,7 @@ export default function RiderApp() {
                 setExpandedStoryStopName(stop.name);
                 setExpandedImagesStopName("");
                 setFollowUser(false);
+                setIsPanelOpen(true);
 
                 const marker = markerRefs.current[index];
                 if (marker) {
@@ -597,10 +591,7 @@ export default function RiderApp() {
                     <strong>Recommended ride time: 60–90 minutes</strong>
                 </p>
 
-                <button
-                    onClick={() => setShowIntroModal(true)}
-                    className="start-button"
-                >
+                <button onClick={() => setShowIntroModal(true)} className="start-button">
                     Start Tour
                 </button>
 
@@ -611,9 +602,7 @@ export default function RiderApp() {
                             <p className="intro-modal-text">
                                 You’re about to hear a short welcome message before the tour begins.
                             </p>
-                            <p className="intro-modal-subtext">
-                                Make sure your volume is on.
-                            </p>
+                            <p className="intro-modal-subtext">Make sure your volume is on.</p>
 
                             <div className="intro-modal-actions">
                                 <button
@@ -730,9 +719,7 @@ export default function RiderApp() {
 
                     {nearbyStop && (
                         <div className="nearby-alert">
-                            <div className="nearby-alert-title">
-                                You’re near {nearbyStop.name}
-                            </div>
+                            <div className="nearby-alert-title">You’re near {nearbyStop.name}</div>
                             <div className="nearby-alert-text">
                                 About {Math.round(nearbyStop.distance * METERS_TO_FEET)} feet away.
                             </div>
@@ -744,9 +731,7 @@ export default function RiderApp() {
                     <div className="arrival-panel">
                         <div className="arrival-title">You’ve arrived</div>
                         <div className="arrival-name">{arrivalStopName}</div>
-                        {audioNotice && (
-                            <div className="arrival-audio-note">{audioNotice}</div>
-                        )}
+                        {audioNotice && <div className="arrival-audio-note">{audioNotice}</div>}
                     </div>
                 )}
 
@@ -754,9 +739,7 @@ export default function RiderApp() {
                     <div className="selected-stop-panel">
                         <div className="selected-stop-label">Selected Stop</div>
                         <div className="selected-stop-name">{selectedStop.name}</div>
-                        <div className="selected-stop-description">
-                            {selectedStop.description}
-                        </div>
+                        <div className="selected-stop-description">{selectedStop.description}</div>
 
                         {selectedStopUnlocked ? (
                             <>
@@ -818,7 +801,8 @@ export default function RiderApp() {
                         ) : (
                             <>
                                 <div className="locked-stop-message">
-                                    Get within {effectiveUnlockRadiusFeetDisplay} feet of this stop to unlock.
+                                    Get within {effectiveUnlockRadiusFeetDisplay} feet of this stop to unlock
+                                    the story, audio, and images.
                                 </div>
 
                                 <div className="selected-stop-actions">
@@ -832,7 +816,6 @@ export default function RiderApp() {
                                 </div>
                             </>
                         )}
-
                     </div>
                 )}
 
@@ -866,10 +849,7 @@ export default function RiderApp() {
                                 </div>
 
                                 <div className="stop-card-description">{stop.description}</div>
-
-                                <div className="stop-card-distance">
-                                    {stop.distanceFeet} ft away
-                                </div>
+                                <div className="stop-card-distance">{stop.distanceFeet} ft away</div>
                             </button>
                         );
                     })}
@@ -877,17 +857,14 @@ export default function RiderApp() {
             </aside>
 
             <div className="map-section">
-                <MapContainer
-                    center={[47.58, -122.4]}
-                    zoom={13}
-                    className="map-container"
-                >
+                <MapContainer center={[47.58, -122.4]} zoom={13} className="map-container">
                     <TileLayer
                         attribution="&copy; OpenStreetMap contributors"
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
 
                     <FitBounds stops={stops} selectedStop={selectedStop} />
+
                     <MapController
                         selectedStop={selectedStop}
                         selectedStopIndex={selectedStopIndex}
@@ -895,24 +872,22 @@ export default function RiderApp() {
                         followUser={followUser}
                         isNavigating={isNavigating}
                     />
+
                     <RoutingMachine
                         userLocation={userLocation}
                         selectedStop={selectedStop}
                         showRoute={showRoute}
                     />
+
                     <MapTapHandler setIsPanelOpen={setIsPanelOpen} />
 
                     {stops.map((stop, index) => {
                         const isUnlocked = Boolean(unlockedStops[stop.name]);
                         const isSelected = selectedStop?.name === stop.name;
                         const showPopupStory =
-                            isUnlocked &&
-                            isSelected &&
-                            expandedStoryStopName === stop.name;
+                            isUnlocked && isSelected && expandedStoryStopName === stop.name;
                         const showPopupImages =
-                            isUnlocked &&
-                            isSelected &&
-                            expandedImagesStopName === stop.name;
+                            isUnlocked && isSelected && expandedImagesStopName === stop.name;
 
                         return (
                             <Marker
@@ -971,9 +946,7 @@ export default function RiderApp() {
                                                 </div>
 
                                                 {showPopupStory && (
-                                                    <p className="popup-expanded-text">
-                                                        {stop.extendedDescription}
-                                                    </p>
+                                                    <p className="popup-expanded-text">{stop.extendedDescription}</p>
                                                 )}
 
                                                 {showPopupImages && stop.imageUrls?.length > 0 && (
@@ -993,7 +966,8 @@ export default function RiderApp() {
                                             </>
                                         ) : isNavigating && navigatingStopIndex === index ? (
                                             <p className="popup-locked">
-                                                Navigating to this stop. The story will unlock when you get close enough.
+                                                Navigating to this stop. The story will unlock when you get
+                                                close enough.
                                             </p>
                                         ) : (
                                             <>
@@ -1002,7 +976,7 @@ export default function RiderApp() {
                                                     className="popup-go-button"
                                                     onClick={() => startNavigationToStop(index)}
                                                 >
-                                                    Go Now
+                                                    Start Route
                                                 </button>
                                                 <p className="popup-locked">
                                                     Move closer to unlock the full story.
