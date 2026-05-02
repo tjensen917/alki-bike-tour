@@ -72,7 +72,7 @@ function MapController({
         }
 
         if (followUser && userLocation) {
-            map.setView(userLocation, 16, { animate: true });
+            map.panTo(userLocation, { animate: true });
         }
     }, [map, selectedStop, userLocation, followUser, isNavigating]);
 
@@ -111,7 +111,7 @@ function RoutingMachine({ userLocation, selectedStop, showRoute }) {
             routeWhileDragging: false,
             addWaypoints: false,
             draggableWaypoints: false,
-            fitSelectedRoutes: true,
+            fitSelectedRoutes: false,
             showAlternatives: false,
             lineOptions: {
                 styles: [{ color: "#1E73BE", weight: 5, opacity: 0.85 }],
@@ -512,8 +512,8 @@ export default function RiderApp() {
         setNavigatingStopIndex(index);
         setShowRoute(true);
         setIsNavigating(true);
-
-        // 🔥 keeps panel open (better UX)
+        setFollowUser(false);
+        setIsPanelOpen(false);
     };
 
     const stopNavigation = () => {
