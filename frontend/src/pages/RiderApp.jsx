@@ -59,12 +59,45 @@ function MapController({
 }) {
     const map = useMap();
     const lastSelectedStopIndexRef = useRef(null);
+    const recenterTimerRef = useRef(null);
 
     useEffect(() => {
-        if (isNavigating && userLocation) {
-            map.panTo(userLocation, { animate: true });
-            return;
-        }
+        const clearRecenterTimer = () => {
+            if (recenterTimerRef.current) {
+                clearTimeout(recenterTimerRef.current);
+            }
+        };
+
+        const startRecenterTimer = () => {
+            clearRecenterTimer();
+
+            if (!isNavigating || !userLocation) return;
+
+            recenterTimerRef.current = setTimeout(() => {
+                map.panTo(userLocation, { animate: true });
+            }, 7000);
+        };
+
+        const handleInteraction = () => {
+            startRecenterTimer();
+        };
+
+        map.on("dragstart", handleInteraction);
+        map.on("zoomstart", handleInteraction);
+        map.on("touchstart", handleInteraction);
+
+        startRecenterTimer();
+
+        return () => {
+            clearRecenterTimer();
+            map.off("dragstart", handleInteraction);
+            map.off("zoomstart", handleInteraction);
+            map.off("touchstart", handleInteraction);
+        };
+    }, [map, isNavigating, userLocation]);
+
+    useEffect(() => {
+        if (isNavigating) return;
 
         if (followUser && userLocation) {
             map.panTo(userLocation, { animate: true });
