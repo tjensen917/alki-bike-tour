@@ -580,6 +580,11 @@ body {
   font-weight: 800;
 }
 
+.navigation-recenter-button:hover,
+.navigation-stop-button:hover {
+  opacity: 0.92;
+}
+
 .navigation-stop-button {
   border: none;
   border-radius: 999px;
@@ -587,6 +592,7 @@ body {
   background: #111;
   color: #fff;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .navigation-recenter-button {
@@ -596,6 +602,8 @@ body {
   background: var(--brand-blue);
   color: #fff;
   font-weight: 700;
+  cursor: pointer;
+
 }
 /* ---------- PANEL ACTIONS ---------- */
 
