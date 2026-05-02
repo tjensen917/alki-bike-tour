@@ -97,12 +97,12 @@ function MapController({
     }, [map, isNavigating, userLocation]);
 
     useEffect(() => {
-        if (isNavigating) return;
-
         if (followUser && userLocation) {
-            map.panTo(userLocation, { animate: true });
+            map.setView(userLocation, 16, { animate: true });
             return;
         }
+
+        if (isNavigating) return;
 
         if (selectedStop && selectedStopIndex !== lastSelectedStopIndexRef.current) {
             map.setView(selectedStop.position, 15, { animate: true });
