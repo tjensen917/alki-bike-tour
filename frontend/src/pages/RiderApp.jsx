@@ -608,6 +608,13 @@ export default function RiderApp() {
         }
     };
 
+    const recenterOnUser = () => {
+        setFollowUser(true);
+        setTimeout(() => {
+            setFollowUser(false);
+        }, 500);
+    };
+
     if (!settings) {
         return <div className="center-screen">Loading tour...</div>;
     }
@@ -689,15 +696,12 @@ export default function RiderApp() {
                     </div>
 
                     <button
-                        className="gps-button"
-                        onClick={() => {
-                            setSelectedStopIndex(null);
-                            setFollowUser(true);
-                        }}
+                        className="navigation-recenter-button"
+                        onClick={recenterOnUser}
                         disabled={!userLocation}
                         type="button"
                     >
-                        Re-center
+                        Center
                     </button>
 
                     <button
@@ -735,10 +739,7 @@ export default function RiderApp() {
                     <div className="gps-panel-row">
                         <button
                             className="gps-button"
-                            onClick={() => {
-                                setSelectedStopIndex(null);
-                                setFollowUser(true);
-                            }}
+                            onClick={recenterOnUser}
                             disabled={!userLocation}
                             type="button"
                         >

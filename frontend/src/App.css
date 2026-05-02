@@ -589,6 +589,14 @@ body {
   font-weight: 700;
 }
 
+.navigation-recenter-button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: var(--brand-blue);
+  color: #fff;
+  font-weight: 700;
+}
 /* ---------- PANEL ACTIONS ---------- */
 
 .panel-actions {
