@@ -75,7 +75,7 @@ function MapController({
 
             recenterTimerRef.current = setTimeout(() => {
                 map.panTo(userLocation, { animate: true });
-            }, 7000);
+            }, 4000);
         };
 
         const handleInteraction = () => {
@@ -127,7 +127,7 @@ function MapTapHandler({ setIsPanelOpen }) {
     return null;
 }
 
-function RoutingMachine({ userLocation, selectedStop, showRoute }) {
+function RoutingMachine({ routeStartLocation, selectedStop, showRoute }) {
     const map = useMap();
     const routingControlRef = useRef(null);
 
@@ -139,11 +139,11 @@ function RoutingMachine({ userLocation, selectedStop, showRoute }) {
             routingControlRef.current = null;
         }
 
-        if (!showRoute || !userLocation || !selectedStop) return;
+        if (!showRoute || !routeStartLocation || !selectedStop) return;
 
         routingControlRef.current = L.Routing.control({
             waypoints: [
-                L.latLng(userLocation[0], userLocation[1]),
+                L.latLng(routeStartLocation[0], routeStartLocation[1]),
                 L.latLng(selectedStop.position[0], selectedStop.position[1]),
             ],
             routeWhileDragging: false,
@@ -163,7 +163,7 @@ function RoutingMachine({ userLocation, selectedStop, showRoute }) {
                 routingControlRef.current = null;
             }
         };
-    }, [map, userLocation, selectedStop, showRoute]);
+    }, [map, routeStartLocation, selectedStop, showRoute]);
 
     return null;
 }
@@ -295,6 +295,7 @@ export default function RiderApp() {
     const [introPlayed, setIntroPlayed] = useState(false);
     const [showIntroModal, setShowIntroModal] = useState(false);
     const [introStarting, setIntroStarting] = useState(false);
+    const [routeStartLocation, setRouteStartLocation] = useState(null);
 
     const markerRefs = useRef([]);
     const watchIdRef = useRef(null);
@@ -537,6 +538,7 @@ export default function RiderApp() {
     const startNavigationToStop = (index) => {
         setSelectedStopIndex(index);
         setNavigatingStopIndex(index);
+        setRouteStartLocation(userLocation);
         setShowRoute(true);
         setIsNavigating(true);
         setFollowUser(false);
@@ -547,6 +549,7 @@ export default function RiderApp() {
         setShowRoute(false);
         setIsNavigating(false);
         setNavigatingStopIndex(null);
+        setRouteStartLocation(null);
     };
 
     const handleStopClick = (index) => {
@@ -921,7 +924,7 @@ export default function RiderApp() {
                     />
 
                     <RoutingMachine
-                        userLocation={userLocation}
+                        routeStartLocation={routeStartLocation}
                         selectedStop={selectedStop}
                         showRoute={showRoute}
                     />
