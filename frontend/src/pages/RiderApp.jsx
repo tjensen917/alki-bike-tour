@@ -689,6 +689,18 @@ export default function RiderApp() {
                     </div>
 
                     <button
+                        className="gps-button"
+                        onClick={() => {
+                            setSelectedStopIndex(null);
+                            setFollowUser(true);
+                        }}
+                        disabled={!userLocation}
+                        type="button"
+                    >
+                        Re-center
+                    </button>
+
+                    <button
                         type="button"
                         className="navigation-stop-button"
                         onClick={stopNavigation}
