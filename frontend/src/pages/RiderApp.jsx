@@ -696,10 +696,11 @@ export default function RiderApp() {
                     </div>
 
                     <button
+                        type="button"
                         className="navigation-recenter-button"
                         onClick={recenterOnUser}
                         disabled={!userLocation}
-                        type="button"
+
                     >
                         Center
                     </button>
