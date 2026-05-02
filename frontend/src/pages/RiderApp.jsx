@@ -16,7 +16,10 @@ import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 const METERS_TO_FEET = 3.28084;
 const FEET_PER_MILE = 5280;
 const MOBILE_BREAKPOINT = 900;
+
 const DEFAULT_START_LOCATION = [47.589259, -122.38043];
+const DEFAULT_RETURN_ADDRESS =
+    "1660 Harbor Avenue Southwest, Seattle, WA 98126";
 
 const DefaultIcon = L.icon({
     iconUrl: new URL("leaflet/dist/images/marker-icon.png", import.meta.url).href,
@@ -127,7 +130,7 @@ function MapTapHandler({ setIsPanelOpen }) {
     return null;
 }
 
-function RoutingMachine({ routeStartLocation, selectedStop, showRoute }) {
+function RoutingMachine({ routeStartLocation, navigationTarget, showRoute }) {
     const map = useMap();
     const routingControlRef = useRef(null);
 
@@ -139,12 +142,12 @@ function RoutingMachine({ routeStartLocation, selectedStop, showRoute }) {
             routingControlRef.current = null;
         }
 
-        if (!showRoute || !routeStartLocation || !selectedStop) return;
+        if (!showRoute || !routeStartLocation || !navigationTarget) return;
 
         routingControlRef.current = L.Routing.control({
             waypoints: [
                 L.latLng(routeStartLocation[0], routeStartLocation[1]),
-                L.latLng(selectedStop.position[0], selectedStop.position[1]),
+                L.latLng(navigationTarget.position[0], navigationTarget.position[1]),
             ],
             routeWhileDragging: false,
             addWaypoints: false,
@@ -163,7 +166,7 @@ function RoutingMachine({ routeStartLocation, selectedStop, showRoute }) {
                 routingControlRef.current = null;
             }
         };
-    }, [map, routeStartLocation, selectedStop, showRoute]);
+    }, [map, routeStartLocation, navigationTarget, showRoute]);
 
     return null;
 }
@@ -238,8 +241,14 @@ function triggerArrivalFeedback() {
         oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
 
         gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.02);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.35);
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.08,
+            audioContext.currentTime + 0.02
+        );
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.0001,
+            audioContext.currentTime + 0.35
+        );
 
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
@@ -247,7 +256,9 @@ function triggerArrivalFeedback() {
         oscillator.start(audioContext.currentTime);
         oscillator.stop(audioContext.currentTime + 0.35);
 
-        oscillator.onended = () => audioContext.close();
+        oscillator.onended = () => {
+            audioContext.close();
+        };
 
         return true;
     } catch {
@@ -286,21 +297,39 @@ export default function RiderApp() {
     const [isMobile, setIsMobile] = useState(window.innerWidth <= MOBILE_BREAKPOINT);
     const [isPanelOpen, setIsPanelOpen] = useState(window.innerWidth > MOBILE_BREAKPOINT);
     const [returnReminder, setReturnReminder] = useState("");
+    const [returnArrivalMessage, setReturnArrivalMessage] = useState("");
 
     const [showRoute, setShowRoute] = useState(false);
     const [isNavigating, setIsNavigating] = useState(false);
     const [navigatingStopIndex, setNavigatingStopIndex] = useState(null);
+    const [isReturningBike, setIsReturningBike] = useState(false);
+    const [routeStartLocation, setRouteStartLocation] = useState(null);
 
     const introAudioRef = useRef(null);
     const [introPlayed, setIntroPlayed] = useState(false);
     const [showIntroModal, setShowIntroModal] = useState(false);
     const [introStarting, setIntroStarting] = useState(false);
-    const [routeStartLocation, setRouteStartLocation] = useState(null);
 
     const markerRefs = useRef([]);
     const watchIdRef = useRef(null);
 
-    const selectedStop = selectedStopIndex !== null ? stops[selectedStopIndex] : null;
+    const selectedStop =
+        selectedStopIndex !== null ? stops[selectedStopIndex] : null;
+
+    const returnLocation = settings?.returnLocation || DEFAULT_START_LOCATION;
+
+    const returnDestination = useMemo(
+        () => ({
+            name: "Rental Return",
+            position: returnLocation,
+            description: "Return your bike rental here.",
+            extendedDescription: `Return your rental bike to ${DEFAULT_RETURN_ADDRESS}.`,
+            type: "return",
+        }),
+        [returnLocation]
+    );
+
+    const navigationTarget = isReturningBike ? returnDestination : selectedStop;
 
     const nearestStop = useMemo(
         () => findNearestStop(userLocation, stops),
@@ -379,6 +408,37 @@ export default function RiderApp() {
         } catch (err) {
             console.log("Intro audio blocked or failed:", err);
         }
+    };
+
+    const stopNavigation = () => {
+        setShowRoute(false);
+        setIsNavigating(false);
+        setNavigatingStopIndex(null);
+        setIsReturningBike(false);
+        setRouteStartLocation(null);
+    };
+
+    const startNavigationToStop = (index) => {
+        setSelectedStopIndex(index);
+        setNavigatingStopIndex(index);
+        setIsReturningBike(false);
+        setRouteStartLocation(userLocation || DEFAULT_START_LOCATION);
+        setShowRoute(true);
+        setIsNavigating(true);
+        setFollowUser(false);
+        setIsPanelOpen(false);
+    };
+
+    const startReturnNavigation = () => {
+        setNavigatingStopIndex(null);
+        setSelectedStopIndex(null);
+        setIsReturningBike(true);
+        setRouteStartLocation(userLocation || DEFAULT_START_LOCATION);
+        setShowRoute(true);
+        setIsNavigating(true);
+        setFollowUser(false);
+        setIsPanelOpen(false);
+        setReturnArrivalMessage("");
     };
 
     useEffect(() => {
@@ -473,9 +533,7 @@ export default function RiderApp() {
                 }
 
                 if (isNavigating && navigatingStopIndex === index) {
-                    setShowRoute(false);
-                    setIsNavigating(false);
-                    setNavigatingStopIndex(null);
+                    stopNavigation();
                 }
 
                 triggerArrivalFeedback();
@@ -511,8 +569,8 @@ export default function RiderApp() {
         const returnDistanceMeters = getDistanceInMeters(
             userLocation[0],
             userLocation[1],
-            settings.returnLocation[0],
-            settings.returnLocation[1]
+            returnLocation[0],
+            returnLocation[1]
         );
 
         const returnDistanceMiles =
@@ -526,31 +584,43 @@ export default function RiderApp() {
             estimatedMinutesBack >= minutesUntilClosing - 5
         ) {
             setReturnReminder(
-                `Reminder: bikes should be returned by ${settings.closingTime}. You are about ${returnDistanceMiles.toFixed(
+                `Time to head back. You are about ${returnDistanceMiles.toFixed(
                     1
                 )} miles from the return location.`
             );
         } else {
             setReturnReminder("");
         }
-    }, [userLocation, settings]);
+    }, [userLocation, settings, returnLocation]);
 
-    const startNavigationToStop = (index) => {
-        setSelectedStopIndex(index);
-        setNavigatingStopIndex(index);
-        setRouteStartLocation(userLocation);
-        setShowRoute(true);
-        setIsNavigating(true);
-        setFollowUser(false);
-        setIsPanelOpen(false);
-    };
+    useEffect(() => {
+        if (!userLocation || !isReturningBike) return;
 
-    const stopNavigation = () => {
-        setShowRoute(false);
-        setIsNavigating(false);
-        setNavigatingStopIndex(null);
-        setRouteStartLocation(null);
-    };
+        const distanceToReturnMeters = getDistanceInMeters(
+            userLocation[0],
+            userLocation[1],
+            returnLocation[0],
+            returnLocation[1]
+        );
+
+        const arrivalRadiusMeters = Math.max(50 / METERS_TO_FEET, locationAccuracy || 0);
+
+        if (distanceToReturnMeters <= arrivalRadiusMeters) {
+            stopNavigation();
+            setReturnArrivalMessage(
+                "You’re back at the rental location. Thanks for riding!"
+            );
+            triggerArrivalFeedback();
+        }
+    }, [userLocation, isReturningBike, returnLocation, locationAccuracy]);
+
+    useEffect(() => {
+        if (!returnReminder) return;
+
+        if ("vibrate" in navigator) {
+            navigator.vibrate([100, 60, 100]);
+        }
+    }, [returnReminder]);
 
     const handleStopClick = (index) => {
         const stop = stops[index];
@@ -605,17 +675,12 @@ export default function RiderApp() {
         setAudioNotice("");
         setExpandedStoryStopName("");
         setExpandedImagesStopName("");
+        setReturnArrivalMessage("");
         stopNavigation();
+
         if ("speechSynthesis" in window) {
             window.speechSynthesis.cancel();
         }
-    };
-
-    const recenterOnUser = () => {
-        setFollowUser(true);
-        setTimeout(() => {
-            setFollowUser(false);
-        }, 500);
     };
 
     if (!settings) {
@@ -691,22 +756,12 @@ export default function RiderApp() {
 
     return (
         <div className="tour-layout">
-            {isNavigating && selectedStop && (
+            {isNavigating && navigationTarget && (
                 <div className="navigation-card">
                     <div>
                         <div className="navigation-label">Navigating to</div>
-                        <div className="navigation-title">{selectedStop.name}</div>
+                        <div className="navigation-title">{navigationTarget.name}</div>
                     </div>
-
-                    <button
-                        type="button"
-                        className="navigation-recenter-button"
-                        onClick={recenterOnUser}
-                        disabled={!userLocation}
-
-                    >
-                        Center
-                    </button>
 
                     <button
                         type="button"
@@ -743,7 +798,10 @@ export default function RiderApp() {
                     <div className="gps-panel-row">
                         <button
                             className="gps-button"
-                            onClick={recenterOnUser}
+                            onClick={() => {
+                                setSelectedStopIndex(null);
+                                setFollowUser(true);
+                            }}
                             disabled={!userLocation}
                             type="button"
                         >
@@ -765,11 +823,31 @@ export default function RiderApp() {
 
                     {locationError && <p className="gps-error">{locationError}</p>}
 
-                    {returnReminder && <p className="warning-text">{returnReminder}</p>}
+                    {returnReminder && (
+                        <div className="return-alert">
+                            <div className="return-alert-title">Time to head back</div>
+                            <div className="return-alert-text">{returnReminder}</div>
+                            <button
+                                type="button"
+                                className="return-bike-button"
+                                onClick={startReturnNavigation}
+                            >
+                                Return Bike
+                            </button>
+                        </div>
+                    )}
+
+                    {returnArrivalMessage && (
+                        <div className="return-arrival-message">
+                            {returnArrivalMessage}
+                        </div>
+                    )}
 
                     {nearbyStop && (
                         <div className="nearby-alert">
-                            <div className="nearby-alert-title">You’re near {nearbyStop.name}</div>
+                            <div className="nearby-alert-title">
+                                You’re near {nearbyStop.name}
+                            </div>
                             <div className="nearby-alert-text">
                                 About {Math.round(nearbyStop.distance * METERS_TO_FEET)} feet away.
                             </div>
@@ -789,7 +867,9 @@ export default function RiderApp() {
                     <div className="selected-stop-panel">
                         <div className="selected-stop-label">Selected Stop</div>
                         <div className="selected-stop-name">{selectedStop.name}</div>
-                        <div className="selected-stop-description">{selectedStop.description}</div>
+                        <div className="selected-stop-description">
+                            {selectedStop.description}
+                        </div>
 
                         {selectedStopUnlocked ? (
                             <>
@@ -873,6 +953,14 @@ export default function RiderApp() {
                     <button className="reset-button" onClick={handleResetTour} type="button">
                         Reset Unlocks
                     </button>
+
+                    <button
+                        className="return-bike-small-button"
+                        onClick={startReturnNavigation}
+                        type="button"
+                    >
+                        Return Bike
+                    </button>
                 </div>
 
                 <div className="stop-list">
@@ -907,7 +995,11 @@ export default function RiderApp() {
             </aside>
 
             <div className="map-section">
-                <MapContainer center={[47.58, -122.4]} zoom={13} className="map-container">
+                <MapContainer
+                    center={[47.58, -122.4]}
+                    zoom={13}
+                    className="map-container"
+                >
                     <TileLayer
                         attribution="&copy; OpenStreetMap contributors"
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -925,7 +1017,7 @@ export default function RiderApp() {
 
                     <RoutingMachine
                         routeStartLocation={routeStartLocation}
-                        selectedStop={selectedStop}
+                        navigationTarget={navigationTarget}
                         showRoute={showRoute}
                     />
 
@@ -996,7 +1088,9 @@ export default function RiderApp() {
                                                 </div>
 
                                                 {showPopupStory && (
-                                                    <p className="popup-expanded-text">{stop.extendedDescription}</p>
+                                                    <p className="popup-expanded-text">
+                                                        {stop.extendedDescription}
+                                                    </p>
                                                 )}
 
                                                 {showPopupImages && stop.imageUrls?.length > 0 && (
@@ -1016,8 +1110,7 @@ export default function RiderApp() {
                                             </>
                                         ) : isNavigating && navigatingStopIndex === index ? (
                                             <p className="popup-locked">
-                                                Navigating to this stop. The story will unlock when you get
-                                                close enough.
+                                                Navigating to this stop. The story will unlock when you get close enough.
                                             </p>
                                         ) : (
                                             <>
@@ -1042,6 +1135,22 @@ export default function RiderApp() {
                             </Marker>
                         );
                     })}
+
+                    <Marker position={returnLocation}>
+                        <Popup autoPan={false}>
+                            <div className="popup-content">
+                                <h3 className="popup-title">Rental Return</h3>
+                                <p className="popup-text">{DEFAULT_RETURN_ADDRESS}</p>
+                                <button
+                                    type="button"
+                                    className="popup-go-button"
+                                    onClick={startReturnNavigation}
+                                >
+                                    Return Bike
+                                </button>
+                            </div>
+                        </Popup>
+                    </Marker>
 
                     {userLocation && (
                         <>
