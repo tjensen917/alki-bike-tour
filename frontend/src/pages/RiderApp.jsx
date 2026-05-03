@@ -59,10 +59,18 @@ function MapController({
     userLocation,
     followUser,
     isNavigating,
+    centerRequestId,
 }) {
     const map = useMap();
     const lastSelectedStopIndexRef = useRef(null);
     const recenterTimerRef = useRef(null);
+
+
+    useEffect(() => {
+        if (!userLocation || centerRequestId === 0) return;
+
+        map.setView(userLocation, 16, { animate: true });
+    }, [map, userLocation, centerRequestId]);
 
     useEffect(() => {
         const clearRecenterTimer = () => {
@@ -315,6 +323,7 @@ export default function RiderApp() {
 
     const [lightboxImages, setLightboxImages] = useState([]);
     const [lightboxIndex, setLightboxIndex] = useState(0);
+    const [centerRequestId, setCenterRequestId] = useState(0);
 
     const selectedStop =
         selectedStopIndex !== null ? stops[selectedStopIndex] : null;
@@ -799,6 +808,7 @@ export default function RiderApp() {
                     <button
                         className="navigation-recenter-button"
                         onClick={() => {
+                            setCenterRequestId((prev) => prev + 1);
                             setFollowUser(true);
                         }}
                         disabled={!userLocation}
@@ -846,6 +856,8 @@ export default function RiderApp() {
                                 if (!isNavigating) {
                                     setSelectedStopIndex(null);
                                 }
+
+                                setCenterRequestId((prev) => prev + 1);
                                 setFollowUser(true);
                             }}
                             disabled={!userLocation}
@@ -1065,6 +1077,7 @@ export default function RiderApp() {
                         userLocation={userLocation}
                         followUser={followUser}
                         isNavigating={isNavigating}
+                        centerRequestId={centerRequestId}
                     />
 
                     <RoutingMachine
