@@ -687,12 +687,16 @@ export default function RiderApp() {
     };
 
     const showPreviousImage = () => {
+        if (!lightboxImages.length) return;
+
         setLightboxIndex((prev) =>
             prev === 0 ? lightboxImages.length - 1 : prev - 1
         );
     };
 
     const showNextImage = () => {
+        if (!lightboxImages.length) return;
+
         setLightboxIndex((prev) =>
             prev === lightboxImages.length - 1 ? 0 : prev + 1
         );
