@@ -1053,6 +1053,30 @@ body {
   text-align: center;
 }
 
+.leaflet-popup-content-wrapper {
+  max-height: 72vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.leaflet-popup-content {
+  max-height: 68vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 520px) {
+  .leaflet-popup-content-wrapper {
+    max-width: 92vw;
+    max-height: 68vh;
+  }
+
+  .leaflet-popup-content {
+    max-height: 64vh;
+    overflow-y: auto;
+  }
+}
+
 /* ---------- USER LOCATION ---------- */
 
 .user-location-icon {

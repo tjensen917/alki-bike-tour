@@ -341,6 +341,13 @@ export default function RiderApp() {
         [returnLocation]
     );
 
+    const unlockSpeech = () => {
+        if (!("speechSynthesis" in window)) return;
+        const utterance = new SpeechSynthesisUtterance("");
+        utterance.volume = 0;
+        window.speechSynthesis.speak(utterance);
+    }
+
     const navigationTarget = isReturningBike ? returnDestination : selectedStop;
 
     const nearestStop = useMemo(
@@ -759,6 +766,7 @@ export default function RiderApp() {
                                     type="button"
                                     className="secondary-button"
                                     onClick={() => {
+                                        unlockSpeech();
                                         setShowIntroModal(false);
                                         setStarted(true);
                                     }}
@@ -770,6 +778,7 @@ export default function RiderApp() {
                                     type="button"
                                     className="start-button"
                                     onClick={async () => {
+                                        unlockSpeech();
                                         setIntroStarting(true);
                                         await playIntroAudio();
 
