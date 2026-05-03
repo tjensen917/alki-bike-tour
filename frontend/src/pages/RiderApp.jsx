@@ -764,6 +764,18 @@ export default function RiderApp() {
                     </div>
 
                     <button
+                        className="navigation-recenter-button"
+                        onClick={() => {
+                            setSelectedStopIndex(null);
+                            setFollowUser(true);
+                        }}
+                        disabled={!userLocation}
+                        type="button"
+                    >
+                        Center
+                    </button>
+
+                    <button
                         type="button"
                         className="navigation-stop-button"
                         onClick={stopNavigation}
