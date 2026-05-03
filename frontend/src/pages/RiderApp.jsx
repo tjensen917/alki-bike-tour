@@ -128,10 +128,17 @@ function MapController({
     return null;
 }
 
-function MapTapHandler({ setIsPanelOpen }) {
+function MapTapHandler({ setIsPanelOpen, setFollowUser }) {
     useMapEvents({
         click() {
             setIsPanelOpen(false);
+            setFollowUser(false);
+        },
+        dragstart() {
+            setFollowUser(false);
+        },
+        zoomstart() {
+            setFollowUser(false);
         },
     });
 
@@ -435,6 +442,8 @@ export default function RiderApp() {
         setNavigatingStopIndex(null);
         setIsReturningBike(false);
         setRouteStartLocation(null);
+        // important: release map control
+        setFollowUser(false);
     };
 
     const startNavigationToStop = (index) => {
@@ -1095,7 +1104,10 @@ export default function RiderApp() {
                         showRoute={showRoute}
                     />
 
-                    <MapTapHandler setIsPanelOpen={setIsPanelOpen} />
+                    <MapTapHandler
+                        setIsPanelOpen={setIsPanelOpen}
+                        setFollowUser={setFollowUser}
+                    />
 
                     {stops.map((stop, index) => {
                         const isUnlocked = Boolean(unlockedStops[stop.name]);
