@@ -313,6 +313,9 @@ export default function RiderApp() {
     const markerRefs = useRef([]);
     const watchIdRef = useRef(null);
 
+    const [lightboxImages, setLightboxImages] = useState(null);
+    const [lightboxIndex, setLightboxIndex] = useState(0);
+
     const selectedStop =
         selectedStopIndex !== null ? stops[selectedStopIndex] : null;
 
@@ -669,6 +672,28 @@ export default function RiderApp() {
         );
     };
 
+    const openLightbox = (images, index) => {
+        setLightboxImages(images);
+        setLightboxIndex(index);
+    };
+
+    const closeLightbox = () => {
+        setLightboxImages([]);
+        setLightboxIndex(0);
+    };
+
+    const showPreviousImage = () => {
+        setLightboxIndex((prev) =>
+            prev === 0 ? lightboxImages.length - 1 : prev - 1
+        );
+    };
+
+    const showNextImage = () => {
+        setLightboxIndex((prev) =>
+            prev === lightboxImages.length - 1 ? 0 : prev + 1
+        );
+    };
+
     const handleResetTour = () => {
         setUnlockedStops({});
         setArrivalStopName("");
@@ -930,12 +955,18 @@ export default function RiderApp() {
                                 {showSelectedImages && selectedStop.imageUrls?.length > 0 && (
                                     <div className="stop-image-grid">
                                         {selectedStop.imageUrls.map((imageUrl, index) => (
-                                            <img
+                                            <button
                                                 key={index}
-                                                src={imageUrl}
-                                                alt={`${selectedStop.name} view ${index + 1}`}
-                                                className="stop-image"
-                                            />
+                                                type="button"
+                                                className="stop-image-button"
+                                                onClick={() => openLightbox(selectedStop.imageUrls, index)}
+                                            >
+                                                <img
+                                                    src={imageUrl}
+                                                    alt={`${selectedStop.name} view ${index + 1}`}
+                                                    className="stop-image"
+                                                />
+                                            </button>
                                         ))}
                                     </div>
                                 )}
@@ -1108,12 +1139,18 @@ export default function RiderApp() {
                                                 {showPopupImages && stop.imageUrls?.length > 0 && (
                                                     <div className="popup-image-grid">
                                                         {stop.imageUrls.map((imageUrl, imageIndex) => (
-                                                            <img
+                                                            <button
                                                                 key={imageIndex}
-                                                                src={imageUrl}
-                                                                alt={`${stop.name} view ${imageIndex + 1}`}
-                                                                className="popup-image"
-                                                            />
+                                                                type="button"
+                                                                className="popup-image-button"
+                                                                onClick={() => openLightbox(stop.imageUrls, imageIndex)}
+                                                            >
+                                                                <img
+                                                                    src={imageUrl}
+                                                                    alt={`${stop.name} view ${imageIndex + 1}`}
+                                                                    className="popup-image"
+                                                                />
+                                                            </button>
                                                         ))}
                                                     </div>
                                                 )}
@@ -1182,6 +1219,47 @@ export default function RiderApp() {
                     )}
                 </MapContainer>
             </div>
+            {lightboxImages.length > 0 && (
+                <div className="image-lightbox-overlay">
+                    <button
+                        type="button"
+                        className="image-lightbox-close"
+                        onClick={closeLightbox}
+                    >
+                        ×
+                    </button>
+
+                    {lightboxImages.length > 1 && (
+                        <button
+                            type="button"
+                            className="image-lightbox-arrow image-lightbox-arrow-left"
+                            onClick={showPreviousImage}
+                        >
+                            ‹
+                        </button>
+                    )}
+
+                    <img
+                        src={lightboxImages[lightboxIndex]}
+                        alt={`Expanded view ${lightboxIndex + 1}`}
+                        className="image-lightbox-image"
+                    />
+
+                    {lightboxImages.length > 1 && (
+                        <button
+                            type="button"
+                            className="image-lightbox-arrow image-lightbox-arrow-right"
+                            onClick={showNextImage}
+                        >
+                            ›
+                        </button>
+                    )}
+
+                    <div className="image-lightbox-counter">
+                        {lightboxIndex + 1} / {lightboxImages.length}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

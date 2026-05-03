@@ -29,6 +29,10 @@ export default function AdminDashboard() {
     const [settings, setSettings] = useState(emptySettings);
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(true);
+    const currentImageUrls = stopForm.imageUrlsText
+        .split("\n")
+        .map((url) => url.trim())
+        .filter(Boolean);
 
     const navigate = useNavigate();
 
@@ -183,6 +187,21 @@ export default function AdminDashboard() {
         navigate("/admin/login");
     }
 
+    function removeImageUrl(imageUrlToRemove) {
+        setStopForm((prev) => {
+            const updatedUrls = prev.imageUrlsText
+                .split("\n")
+                .map((url) => url.trim())
+                .filter(Boolean)
+                .filter((url) => url !== imageUrlToRemove);
+
+            return {
+                ...prev,
+                imageUrlsText: updatedUrls.join("\n"),
+            };
+        });
+    }
+
     if (loading) {
         return <div className="center-screen">Loading admin dashboard...</div>;
     }
@@ -263,6 +282,28 @@ export default function AdminDashboard() {
                             accept="image/*"
                             onChange={handleImageUpload}
                         />
+
+                        {currentImageUrls.length > 0 && (
+                            <div className="admin-image-preview-grid">
+                                {currentImageUrls.map((imageUrl, index) => (
+                                    <div key={imageUrl} className="admin-image-preview-card">
+                                        <img
+                                            src={imageUrl}
+                                            alt={`Stop image ${index + 1}`}
+                                            className="admin-image-preview"
+                                        />
+
+                                        <button
+                                            type="button"
+                                            className="admin-remove-image-button"
+                                            onClick={() => removeImageUrl(imageUrl)}
+                                        >
+                                            Remove
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         {/* <textarea
                             className="input textarea"
