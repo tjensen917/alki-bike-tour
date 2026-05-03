@@ -114,6 +114,33 @@ export default function AdminDashboard() {
         }
     }
 
+    async function handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("image", file);
+
+        try {
+            const res = await API.post("/api/admin/upload-image", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+
+            const fullImageUrl = `${import.meta.env.VITE_API_URL}${res.data.imageUrl}`;
+
+            setStopForm((prev) => ({
+                ...prev,
+                imageUrlsText: prev.imageUrlsText
+                    ? `${prev.imageUrlsText}\n${fullImageUrl}`
+                    : fullImageUrl,
+            }));
+        } catch (err) {
+            setMessage(err.response?.data?.message || "Image upload failed.");
+        }
+    }
+
     async function deleteStop(id) {
         if (!window.confirm("Delete this stop?")) return;
 
@@ -230,7 +257,14 @@ export default function AdminDashboard() {
                             }
                         />
 
-                        <textarea
+                        <input
+                            className="input"
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                        />
+
+                        {/* <textarea
                             className="input textarea"
                             placeholder="Image URLs, one per line"
                             value={stopForm.imageUrlsText}
@@ -240,7 +274,7 @@ export default function AdminDashboard() {
                                     imageUrlsText: e.target.value,
                                 }))
                             }
-                        />
+                        /> */}
 
                         <input
                             className="input"

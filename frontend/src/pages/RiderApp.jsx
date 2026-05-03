@@ -78,7 +78,7 @@ function MapController({
 
             recenterTimerRef.current = setTimeout(() => {
                 map.panTo(userLocation, { animate: true });
-            }, 4000);
+            }, 8000);
         };
 
         const handleInteraction = () => {

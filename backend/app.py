@@ -1,8 +1,10 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, send_from_directory
+import os
 from config import Config
 from extensions import db, jwt, cors
 from routes.public import public_bp
 from routes.admin import admin_bp
+
 
 
 def create_app():
@@ -23,6 +25,11 @@ def create_app():
     @app.get("/")
     def home():
       return jsonify({"message": "Alki Tour API running"}), 200
+    
+    @app.route("/uploads/stops/<filename>")
+    def uploaded_stop_image(filename):
+        upload_folder = os.path.join(app.root_path, "uploads", "stops")
+        return send_from_directory(upload_folder, filename)
 
     return app
 
