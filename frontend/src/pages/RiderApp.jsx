@@ -313,7 +313,7 @@ export default function RiderApp() {
     const markerRefs = useRef([]);
     const watchIdRef = useRef(null);
 
-    const [lightboxImages, setLightboxImages] = useState(null);
+    const [lightboxImages, setLightboxImages] = useState([]);
     const [lightboxIndex, setLightboxIndex] = useState(0);
 
     const selectedStop =
@@ -673,7 +673,11 @@ export default function RiderApp() {
     };
 
     const openLightbox = (images, index) => {
-        setLightboxImages(images);
+        const safeImages = images || [];
+
+        if (!safeImages.length) return;
+
+        setLightboxImages(safeImages);
         setLightboxIndex(index);
     };
 
@@ -1219,7 +1223,7 @@ export default function RiderApp() {
                     )}
                 </MapContainer>
             </div>
-            {lightboxImages.length > 0 && (
+            {lightboxImages?.length > 0 && (
                 <div className="image-lightbox-overlay">
                     <button
                         type="button"
