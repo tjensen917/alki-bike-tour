@@ -843,7 +843,9 @@ export default function RiderApp() {
                         <button
                             className="gps-button"
                             onClick={() => {
-                                setSelectedStopIndex(null);
+                                if (!isNavigating) {
+                                    setSelectedStopIndex(null);
+                                }
                                 setFollowUser(true);
                             }}
                             disabled={!userLocation}
