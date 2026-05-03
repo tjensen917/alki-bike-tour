@@ -64,7 +64,16 @@ function MapController({
     const map = useMap();
     const lastSelectedStopIndexRef = useRef(null);
     const recenterTimerRef = useRef(null);
+    const isNavigatingRef = useRef(isNavigating);
 
+    useEffect(() => {
+        isNavigatingRef.current = isNavigating;
+
+        if (!isNavigating && recenterTimerRef.current) {
+            clearTimeout(recenterTimerRef.current);
+            recenterTimerRef.current = null;
+        }
+    }, [isNavigating]);
 
     useEffect(() => {
         if (!userLocation || centerRequestId === 0) return;
@@ -76,17 +85,20 @@ function MapController({
         const clearRecenterTimer = () => {
             if (recenterTimerRef.current) {
                 clearTimeout(recenterTimerRef.current);
+                recenterTimerRef.current = null;
             }
         };
 
         const startRecenterTimer = () => {
             clearRecenterTimer();
 
-            if (!isNavigating || !userLocation) return;
+            if (!isNavigatingRef.current || !userLocation) return;
 
             recenterTimerRef.current = setTimeout(() => {
+                if (!isNavigatingRef.current || !userLocation) return;
+
                 map.panTo(userLocation, { animate: true });
-            }, 8000);
+            }, 4000);
         };
 
         const handleInteraction = () => {
@@ -97,7 +109,9 @@ function MapController({
         map.on("zoomstart", handleInteraction);
         map.on("touchstart", handleInteraction);
 
-        startRecenterTimer();
+        if (isNavigating) {
+            startRecenterTimer();
+        }
 
         return () => {
             clearRecenterTimer();
@@ -108,11 +122,6 @@ function MapController({
     }, [map, isNavigating, userLocation]);
 
     useEffect(() => {
-        if (followUser && userLocation) {
-            map.setView(userLocation, 16, { animate: true });
-            return;
-        }
-
         if (isNavigating) return;
 
         if (selectedStop && selectedStopIndex !== lastSelectedStopIndexRef.current) {
@@ -123,7 +132,7 @@ function MapController({
         if (selectedStopIndex === null) {
             lastSelectedStopIndexRef.current = null;
         }
-    }, [map, selectedStop, selectedStopIndex, userLocation, followUser, isNavigating]);
+    }, [map, selectedStop, selectedStopIndex, isNavigating]);
 
     return null;
 }
