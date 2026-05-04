@@ -98,7 +98,7 @@ function MapController({
                 if (!isNavigatingRef.current || !userLocation) return;
 
                 map.panTo(userLocation, { animate: true });
-            }, 4000);
+            }, 10000);
         };
 
         const handleInteraction = () => {
