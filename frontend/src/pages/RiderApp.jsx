@@ -453,6 +453,8 @@ export default function RiderApp() {
         setRouteStartLocation(null);
         // important: release map control
         setFollowUser(false);
+        // important: release map control after ending navigation, otherwise it can cause issues when starting a new route immediately after
+        setSelectedStopIndex(null);
     };
 
     const startNavigationToStop = (index) => {
@@ -885,7 +887,7 @@ export default function RiderApp() {
                                 }
 
                                 setCenterRequestId((prev) => prev + 1);
-                                setFollowUser(true);
+                                setFollowUser(false);
                             }}
                             disabled={!userLocation}
                             type="button"
